@@ -72,7 +72,7 @@
   .nav-icon { font-size: 20px; }
   .modal-overlay { position: fixed; inset: 0; background: rgba(15,15,15,0.6); z-index: 200; display: none; align-items: flex-end; justify-content: center; }
   .modal-overlay.open { display: flex; }
-  .modal { background: var(--lavender-pale); border-radius: 0; width: 100%; max-width: 430px; max-height: 92vh; overflow-y: auto; overflow-x: hidden; animation: slideUp 0.25s ease-out; border: 2.5px solid var(--ink); border-bottom: none; flex-shrink: 0; }
+  .modal { background: var(--lavender-pale); border-radius: 0; width: 100%; max-width: 430px; max-height: 92vh; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; animation: slideUp 0.25s ease-out; border: 2.5px solid var(--ink); border-bottom: none; flex-shrink: 0; }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
   .modal-handle { width: 36px; height: 4px; background: rgba(0,0,0,0.2); margin: 12px auto 0; }
   .modal-header { padding: 12px 16px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--ink); position: sticky; top: 0; background: var(--lavender-pale); z-index: 1; }
@@ -453,6 +453,31 @@
 </div>
 
 <script>
+// ===== モーダル表示中に背後（カード一覧）のスクロールを固定する =====
+let _modalOpenCount = 0;
+let _scrollLockY = 0;
+function lockBodyScroll() {
+  if (_modalOpenCount === 0) {
+    _scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.body.style.position = 'fixed';
+    document.body.style.top = '-' + _scrollLockY + 'px';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  }
+  _modalOpenCount++;
+}
+function unlockBodyScroll() {
+  _modalOpenCount = Math.max(0, _modalOpenCount - 1);
+  if (_modalOpenCount === 0) {
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.scrollTo(0, _scrollLockY);
+  }
+}
 // ===== DATA STORE =====
 const STORAGE_KEY = 'recipe_book_v1';
 const CUSTOM_TAGS_KEY = 'recipe_custom_tags';
@@ -929,13 +954,13 @@ function openDetail(id) {
     </div>
   `;
 
-  document.getElementById('detailModal').classList.add('open');
+  document.getElementById('detailModal').classList.add('open'); lockBodyScroll();
   document.getElementById('detailContent').scrollTop = 0;
   document.getElementById('detailModal').scrollTop = 0;
 }
 
 function closeDetailModal() {
-  document.getElementById('detailModal').classList.remove('open');
+  document.getElementById('detailModal').classList.remove('open'); unlockBodyScroll();
 }
 
 // ===== ADD MODAL =====
@@ -976,7 +1001,7 @@ function openAddModal(prefill = {}) {
   // Tags
   renderFormTags();
 
-  document.getElementById('addModal').classList.add('open');
+  document.getElementById('addModal').classList.add('open'); lockBodyScroll();
   setTimeout(() => {
     document.querySelector('#addModal .modal').scrollTop = 0;
     document.getElementById('addModal').scrollTop = 0;
@@ -987,7 +1012,7 @@ function closeAddModal() {
   if (document.activeElement && document.activeElement !== document.body) {
     document.activeElement.blur();
   }
-  document.getElementById('addModal').classList.remove('open');
+  document.getElementById('addModal').classList.remove('open'); unlockBodyScroll();
   editingId = null;
 }
 
@@ -1298,11 +1323,11 @@ function shareRecipe(id) {
   const text = `🍳 ${recipe.name}\n${'─'.repeat(20)}\n\n🥕 材料\n${ingr}\n\n👩‍🍳 作り方\n${steps}${memo}${source}`;
 
   document.getElementById('shareText').textContent = text;
-  document.getElementById('shareModal').classList.add('open');
+  document.getElementById('shareModal').classList.add('open'); lockBodyScroll();
 }
 
 function closeShareModal() {
-  document.getElementById('shareModal').classList.remove('open');
+  document.getElementById('shareModal').classList.remove('open'); unlockBodyScroll();
 }
 
 function copyShare() {
@@ -1348,11 +1373,11 @@ function parseRecipeText(text) {
 function openImportTextModal() {
   document.getElementById('importTextArea').value = '';
   document.getElementById('importTextStatus').textContent = '';
-  document.getElementById('importTextModal').classList.add('open');
+  document.getElementById('importTextModal').classList.add('open'); lockBodyScroll();
 }
 
 function closeImportTextModal() {
-  document.getElementById('importTextModal').classList.remove('open');
+  document.getElementById('importTextModal').classList.remove('open'); unlockBodyScroll();
 }
 
 function confirmImportText() {
@@ -1431,11 +1456,11 @@ function openSettingsModal() {
     input.value = '';
     input.placeholder = 'AIzaSy...';
   }
-  document.getElementById('settingsModal').classList.add('open');
+  document.getElementById('settingsModal').classList.add('open'); lockBodyScroll();
 }
 
 function closeSettingsModal() {
-  document.getElementById('settingsModal').classList.remove('open');
+  document.getElementById('settingsModal').classList.remove('open'); unlockBodyScroll();
 }
 
 function saveApiKey() {
@@ -1459,19 +1484,19 @@ function saveApiKeyFromSetup() {
   const key = document.getElementById('setupApiKey').value.trim();
   if (!key) { showToast('キーを入力してね'); return; }
   setApiKey(key);
-  document.getElementById('apiSetupModal').classList.remove('open');
+  document.getElementById('apiSetupModal').classList.remove('open'); unlockBodyScroll();
   showToast('設定完了！AI機能が使えます');
 }
 
 function skipApiSetup() {
-  document.getElementById('apiSetupModal').classList.remove('open');
+  document.getElementById('apiSetupModal').classList.remove('open'); unlockBodyScroll();
 }
 
 function checkFirstLaunch() {
   const key = getApiKey();
   const dismissed = localStorage.getItem('api_setup_dismissed');
   if (!key && !dismissed) {
-    document.getElementById('apiSetupModal').classList.add('open');
+    document.getElementById('apiSetupModal').classList.add('open'); lockBodyScroll();
     localStorage.setItem('api_setup_dismissed', '1');
   }
 }
