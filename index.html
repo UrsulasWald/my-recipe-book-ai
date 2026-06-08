@@ -423,7 +423,7 @@
       <button class="close-btn" onclick="closeShareModal()">✕</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">コピーしてLINEなどで送れます。受け取った人は＋ADDの一番下「テキストから読み込む」に貼り付けて取り込めます。</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">コピーしてLINEなどで送れます。受け取った人は＋ADDの最初の欄に貼り付けて取り込めます。</p>
       <div class="share-text" id="shareText"></div>
       <button class="copy-btn" onclick="copyShare()">📋 テキストをコピー</button>
       <div style="height:20px;"></div>
@@ -1170,6 +1170,9 @@ async function readScreenshot() {
       const err = await response.json();
       if (response.status === 400 && err.error?.message?.includes('API_KEY')) {
         throw new Error('APIキーが無効です。設定を確認してね');
+      }
+      if ([429, 500, 502, 503, 504].includes(response.status)) {
+        throw new Error('AIが今混み合っているみたい。少し待ってからもう一度試してみて');
       }
       throw new Error(`エラー: ${response.status}`);
     }
